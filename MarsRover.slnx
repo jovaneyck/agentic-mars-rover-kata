@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MarsRover.Core/MarsRover.Core.csproj" />
+    <Project Path="src/MarsRover.RoverApp/MarsRover.RoverApp.csproj" />
+    <Project Path="src/MarsRover.CommandCenterApp/MarsRover.CommandCenterApp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MarsRover.Tests/MarsRover.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -10,7 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Hello\Hello.csproj" />
+    <ProjectReference Include="..\..\src\MarsRover.Core\MarsRover.Core.csproj" />
+    <!-- Referenced so both executables are built and copied next to the tests for the end-to-end test. -->
+    <ProjectReference Include="..\..\src\MarsRover.RoverApp\MarsRover.RoverApp.csproj" />
+    <ProjectReference Include="..\..\src\MarsRover.CommandCenterApp\MarsRover.CommandCenterApp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
