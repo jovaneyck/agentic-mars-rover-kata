@@ -1,59 +1,80 @@
-# Components: Mars Rover (hexagonal)
+# Components: Mars Rover, C# implementation (hexagonal)
+
+The F# implementation is described in [c4-components-fsharp.md](c4-components-fsharp.md).
 
 Each process is a hexagon. Adapters at the edges do the I/O, and each process's composition root (`Program.cs`) wires them in. Ports and application services come from `MarsRover.Core`, together with the pure domain (`Navigation`, `Grid`), `Protocol` and `Startup`. Dependencies always point inwards, from adapters to core.
+
+The diagrams are Mermaid flowcharts in C4 colours rather than `C4Component` diagrams. Mermaid's C4 renderer has no automatic layout, whereas flowcharts lay out each hexagon left to right: driving adapters, core, driven adapters. Light blue boxes are adapters, dark blue boxes are core, and grey boxes are the other process. Dotted arrows point to the adapter that uses a pure helper.
 
 ## Rover
 
 ```mermaid
-C4Component
-  title Component diagram for the Rover process
+flowchart LR
+  cc(["<b>Command Center</b><br/>other process"]):::external
+  op(["<b>Operator</b>"]):::person
 
-  Container_Ext(commandCenter, "Command Center", ".NET console app", "Writes one command sequence per line")
-  Person(operator, "Operator", "Reads rover replies")
+  subgraph rover["Rover process: MarsRover.RoverApp"]
+    subgraph driving["Driving adapters"]
+      stdin["<b>StdinCommandSource</b><br/><i>ICommandSource</i><br/>reads stdin lazily,<br/>one sequence per line"]:::adapter
+    end
+    subgraph core["MarsRover.Core"]
+      startup["<b>Startup</b><br/><i>pure</i><br/>CLI args to Grid + Rover,<br/>or an error"]:::core
+      controller["<b>RoverController</b><br/><i>application service</i><br/>keeps rover state<br/>between sequences"]:::core
+      navigation["<b>Navigation + Grid</b><br/><i>pure domain</i><br/>f/b/l/r, wrapping,<br/>obstacle detection"]:::core
+      protocol["<b>Protocol</b><br/><i>pure</i><br/>Report to<br/>OK / OBSTACLE line"]:::core
+    end
+    subgraph driven["Driven adapters"]
+      stdout["<b>StdoutStatusReporter</b><br/><i>IStatusReporter</i><br/>writes one reply<br/>line to stdout"]:::adapter
+    end
+  end
 
-  Container_Boundary(rover, "Rover (MarsRover.RoverApp)") {
-    Component(stdin, "StdinCommandSource", "Driving adapter: ICommandSource", "Reads stdin lazily, one sequence per line")
-    Component(startup, "Startup", "Core, pure", "Parses x y D ox,oy... into a Grid and a Rover, or an error")
-    Component(controller, "RoverController", "Core application service", "Feeds sequences to Navigation and keeps rover state")
-    Component(navigation, "Navigation + Grid", "Core domain, pure", "f/b/l/r, wrapping, obstacle detection")
-    Component(protocol, "Protocol", "Core, pure", "Formats Report as OK / OBSTACLE line")
-    Component(stdout, "StdoutStatusReporter", "Driven adapter: IStatusReporter", "Writes formatted report to stdout")
-  }
+  cc -- "stdin pipe" --> stdin
+  stdin -- "ICommandSource" --> controller
+  stdin ~~~ startup
+  startup -- "start Grid + Rover" --> controller
+  controller -- "ExecuteAll" --> navigation
+  navigation ~~~ stdout
+  controller -- "IStatusReporter" --> stdout
+  protocol -. "formats replies for" .-> stdout
+  stdout -- "stdout" --> op
 
-  Rel(commandCenter, stdin, "Pipes sequences into", "stdin")
-  Rel(startup, controller, "Provides start Grid and Rover to")
-  Rel(stdin, controller, "Supplies sequences to", "ICommandSource")
-  Rel(controller, navigation, "Executes sequences with", "ExecuteAll")
-  Rel(controller, stdout, "Publishes Report through", "IStatusReporter")
-  Rel(stdout, protocol, "Formats with")
-  Rel(stdout, operator, "Writes replies to", "stdout")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+  classDef person fill:#08427b,stroke:#052e56,color:#fff
+  classDef external fill:#999,stroke:#6b6b6b,color:#fff
+  classDef adapter fill:#85bbf0,stroke:#5d82a8,color:#000
+  classDef core fill:#1168bd,stroke:#0b4884,color:#fff
 ```
 
 ## Command Center
 
 ```mermaid
-C4Component
-  title Component diagram for the Command Center process
+flowchart LR
+  op(["<b>Operator</b>"]):::person
+  rover(["<b>Rover</b><br/>other process"]):::external
 
-  Person(operator, "Operator", "Passes command sequences")
-  Container_Ext(rover, "Rover", ".NET console app", "Reads sequences from stdin")
+  subgraph commandCenter["Command Center process: MarsRover.CommandCenterApp"]
+    subgraph driving["Driving adapters"]
+      args["<b>ArgsCommandSource</b><br/><i>ICommandSource</i><br/>exposes CLI args<br/>as sequences"]:::adapter
+    end
+    subgraph core["MarsRover.Core"]
+      service["<b>CommandCenter</b><br/><i>application service</i><br/>sends each sequence<br/>as one line"]:::core
+      protocol["<b>Protocol</b><br/><i>pure</i><br/>strips line breaks:<br/>one sequence = one line"]:::core
+    end
+    subgraph driven["Driven adapters"]
+      transmitter["<b>StdoutCommandTransmitter</b><br/><i>ICommandTransmitter</i><br/>writes the line<br/>to stdout"]:::adapter
+    end
+  end
 
-  Container_Boundary(commandCenter, "Command Center (MarsRover.CommandCenterApp)") {
-    Component(args, "ArgsCommandSource", "Driving adapter: ICommandSource", "Exposes CLI args as sequences")
-    Component(service, "CommandCenter", "Core application service", "Sends each sequence as one line")
-    Component(protocol, "Protocol", "Core, pure", "Strips line breaks: one sequence = one line")
-    Component(transmitter, "StdoutCommandTransmitter", "Driven adapter: ICommandTransmitter", "Writes the line to stdout")
-  }
+  op -- "CLI args" --> args
+  args -- "ICommandSource" --> service
+  service -- "AsSingleLine" --> protocol
+  protocol ~~~ transmitter
+  service -- "ICommandTransmitter" --> transmitter
+  transmitter -- "stdout pipe" --> rover
 
-  Rel(operator, args, "Passes sequences to", "CLI args")
-  Rel(args, service, "Supplies sequences to", "ICommandSource")
-  Rel(service, protocol, "Sanitizes with", "AsSingleLine")
-  Rel(service, transmitter, "Transmits through", "ICommandTransmitter")
-  Rel(transmitter, rover, "Pipes sequences into", "stdout | stdin")
-
-  UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+  classDef person fill:#08427b,stroke:#052e56,color:#fff
+  classDef external fill:#999,stroke:#6b6b6b,color:#fff
+  classDef adapter fill:#85bbf0,stroke:#5d82a8,color:#000
+  classDef core fill:#1168bd,stroke:#0b4884,color:#fff
 ```
 
 In tests, the adapters are replaced by in-memory fakes (`ApplicationTests`). Only `EndToEndTests` uses the real console adapters and processes.

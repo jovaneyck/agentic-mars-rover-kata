@@ -13,4 +13,4 @@ C4Context
   Rel(marsRover, operator, "Reports position, heading and obstacles to", "stdout, plain text")
 ```
 
-See [c4-containers.md](c4-containers.md) for the processes inside the system.
+See [c4-containers.md](c4-containers.md) for the processes inside the system. This view is the same for the C# and F# implementations.

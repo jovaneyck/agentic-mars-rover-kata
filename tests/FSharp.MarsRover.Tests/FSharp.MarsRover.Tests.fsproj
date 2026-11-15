@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestHelpers.fs" />
+    <Compile Include="NavigationTests.fs" />
+    <Compile Include="NavigationProperties.fs" />
+    <Compile Include="StartupAndProtocolTests.fs" />
+    <Compile Include="ApplicationTests.fs" />
+    <Compile Include="EndToEndTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FSharp.MarsRover.Core\FSharp.MarsRover.Core.fsproj" />
+    <!-- Referenced so both executables are built and copied next to the tests for the end-to-end test. -->
+    <ProjectReference Include="..\..\src\FSharp.MarsRover.RoverApp\FSharp.MarsRover.RoverApp.fsproj" />
+    <ProjectReference Include="..\..\src\FSharp.MarsRover.CommandCenterApp\FSharp.MarsRover.CommandCenterApp.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsCheck.Xunit.v3" Version="3.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="Unquote" Version="7.0.1" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+  </ItemGroup>
+
+</Project>

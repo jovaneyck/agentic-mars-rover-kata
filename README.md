@@ -115,7 +115,7 @@ The rover starts with `0 0 N 1,3`, so there is an obstacle at `(1, 3)`:
 
 ## Architecture
 
-C4 diagrams: [context](docs/architecture/c4-context.md), [containers](docs/architecture/c4-containers.md), [components (hexagonal)](docs/architecture/c4-components.md).
+C4 diagrams: [context](docs/architecture/c4-context.md), [containers](docs/architecture/c4-containers.md), components (hexagonal) for [C#](docs/architecture/c4-components.md) and [F#](docs/architecture/c4-components-fsharp.md).
 
 The code uses hexagonal architecture (ports and adapters). All I/O stays at the edges.
 
@@ -125,6 +125,19 @@ The code uses hexagonal architecture (ports and adapters). All I/O stays at the 
 | `src/MarsRover.RoverApp` | stdin and stdout adapters, plus the composition root. |
 | `src/MarsRover.CommandCenterApp` | Command-line argument and stdout adapters, plus the composition root. |
 | `tests/MarsRover.Tests` | Example tests, FsCheck property tests, in-memory adapter tests, and one end-to-end test. |
+
+## F# version
+
+The `FSharp.MarsRover.*` projects are an idiomatic F# port that sits alongside the C# code. They behave identically and use the same protocol, so you can mix C# and F# executables on either side of the pipe.
+
+```powershell
+$cc    = ".\src\FSharp.MarsRover.CommandCenterApp\bin\Debug\net10.0\FSharp.MarsRover.CommandCenterApp.exe"
+$rover = ".\src\FSharp.MarsRover.RoverApp\bin\Debug\net10.0\FSharp.MarsRover.RoverApp.exe"
+
+& $cc ffrff bLff "x?!" fff | & $rover 0 0 N 1,3
+```
+
+The F# code uses no classes or interfaces. Ports are plain functions (`Report -> unit`, `string -> unit`) and lazy `seq<string>` sources, and they are injected by partial application. Validation returns `Result` instead of throwing. Tests are in `tests/FSharp.MarsRover.Tests` and use xUnit v3, FsCheck and Unquote.
 
 ## Tests
 
